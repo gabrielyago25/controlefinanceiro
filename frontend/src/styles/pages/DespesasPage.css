@@ -1,0 +1,31 @@
+.accounts-page { display: grid; gap: 22px; min-height: calc(100vh - 118px); }
+.accounts-toolbar, .accounts-period { display: grid; justify-items: start; gap: 14px; }
+.accounts-period { gap: 8px; }
+.accounts-period > span { color: #65736f; font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.accounts-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.action-secondary { background: #315f8f; } .action-tertiary { background: #7a5b26; }
+.accounts-board { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; align-items: stretch; }
+.accounts-panel { min-height: 520px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 21px; display: grid; grid-template-rows: auto 1fr; gap: 16px; }
+.accounts-panel-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #edf1ec; }
+.accounts-panel-header span { color: #26766b; font-weight: 800; font-size: .78rem; text-transform: uppercase; }
+.accounts-panel-header h2 { margin: 4px 0 0; font-size: 1.25rem; }
+.bill-list, .card-line-list { display: grid; gap: 10px; align-content: start; }
+.bill-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto auto; align-items: center; gap: 12px; min-height: 72px; padding: 13px 14px; border: 1px solid #e6ece9; border-radius: var(--radius-md); background: var(--color-surface-soft); transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition); }
+.bill-row:hover { transform: translateY(-1px); border-color: var(--color-border-strong); box-shadow: var(--shadow-xs); }
+.bill-main { min-width: 0; } .bill-main strong, .bill-main span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bill-main span { color: #6d7a75; font-size: .86rem; margin-top: 4px; } .bill-value { white-space: nowrap; }
+.card-line { position: relative; overflow: hidden; display: grid; grid-template-columns: 8px minmax(0,1fr) auto auto; align-items: center; gap: 14px; min-height: 76px; padding: 14px; border: 1px solid #e4ebe8; border-radius: var(--radius-md); background: linear-gradient(135deg, #fff, #f5f8f7); transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
+.card-line:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--color-border-strong); }
+.card-color { width: 8px; height: 46px; border-radius: 999px; box-shadow: 0 0 0 4px rgba(0,0,0,.025); }
+.card-line div { min-width: 0; } .card-line strong, .card-line span { display: block; }
+.card-line div strong, .card-line div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-line span { color: #6d7a75; font-size: .86rem; margin-top: 4px; }
+.card-name-button { border: 0; padding: 0; background: transparent; color: var(--color-primary-800); font-weight: 850; text-align: left; font-size: .98rem; } .card-name-button:hover { color: var(--color-primary-600); }
+.card-detail-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.card-detail-tabs button { min-height: 42px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 17px; background: var(--color-surface); color: var(--color-primary-800); font-weight: 750; }
+.card-detail-tabs button.active { background: #26766b; border-color: #26766b; color: #fff; }
+.card-detail-content { min-height: 240px; }
+.readonly-card-field { min-height: 42px; display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid #cfd8d2; border-radius: 7px; background: #f4f7f5; }
+.readonly-card-field svg { color: #26766b; } .readonly-card-field span { margin-left: auto; color: #6d7a75; }
+@media (max-width: 980px) { .accounts-board { grid-template-columns: 1fr 1fr; } .bill-row { grid-template-columns: minmax(0,1fr) auto; } .bill-value { grid-column: 1; } }
+@media (max-width: 680px) { .accounts-board { grid-template-columns: 1fr; } .accounts-actions { width: 100%; } .accounts-actions .primary-action { width: 100%; } .accounts-panel { min-height: auto; } .bill-row { grid-template-columns: 1fr; align-items: start; } .card-line { grid-template-columns: 12px minmax(0,1fr); } .card-line > strong, .card-line > button { grid-column: 2; justify-self: start; } }
