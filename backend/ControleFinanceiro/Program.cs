@@ -1,9 +1,11 @@
 using ControleFinanceiro.Infrastructure.InjecaoDependencia;
+using ControleFinanceiro.Infrastructure.Persistencia;
 using ControleFinanceiro.Infrastructure.Seguranca;
 using ControleFinanceiro.Middlewares;
 using ControleFinanceiro.Seguranca;
 using ControleFinanceiro.Application.Abstracoes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -73,6 +75,13 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ControleFinanceiroDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
 app.UseMiddleware<TratamentoErrosMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -90,6 +99,8 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
 app.MapControllers();
 

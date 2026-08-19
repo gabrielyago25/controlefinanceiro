@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-controle_financeiro}
+      POSTGRES_USER: ${POSTGRES_USER:-controle}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-controle_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 8080
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-controle_financeiro};Username=${POSTGRES_USER:-controle};Password=${POSTGRES_PASSWORD:-controle_dev}"
+      Database__ApplyMigrationsOnStartup: "true"
+      Jwt__Chave: ${JWT_KEY:-desenvolvimento-docker-chave-controle-financeiro-2026}
+      Cors__OrigensPermitidas__0: ${FRONTEND_ORIGIN:-http://localhost:5173}
+    ports:
+      - "${API_PORT:-5175}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5175}
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+    name: controlefinanceiro_pgdata
