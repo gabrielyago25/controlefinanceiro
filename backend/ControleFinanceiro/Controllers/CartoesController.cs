@@ -1,5 +1,5 @@
-using ControleFinanceiro.Application.Dtos;
-using ControleFinanceiro.Application.Servicos;
+using ControleFinanceiro.Application.DTOs;
+using ControleFinanceiro.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

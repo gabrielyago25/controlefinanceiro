@@ -1,9 +1,9 @@
-using ControleFinanceiro.Infrastructure.InjecaoDependencia;
-using ControleFinanceiro.Infrastructure.Persistencia;
-using ControleFinanceiro.Infrastructure.Seguranca;
-using ControleFinanceiro.Middlewares;
-using ControleFinanceiro.Seguranca;
-using ControleFinanceiro.Application.Abstracoes;
+using ControleFinanceiro.Infrastructure.DependencyInjection;
+using ControleFinanceiro.Infrastructure.Persistence;
+using ControleFinanceiro.Infrastructure.Security;
+using ControleFinanceiro.Middleware;
+using ControleFinanceiro.Security;
+using ControleFinanceiro.Application.Abstractions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.JsonWebTokens;
