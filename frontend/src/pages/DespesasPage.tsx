@@ -52,8 +52,8 @@ export function DespesasPage() {
   });
 
   const cartoes = useQuery({
-    queryKey: ["cartoes"],
-    queryFn: () => api<Cartao[]>("/api/cartoes")
+    queryKey: ["cartoes", periodo],
+    queryFn: () => api<Cartao[]>(`/api/cartoes?mes=${periodo.mes}&ano=${periodo.ano}`)
   });
 
   const comprasCartao = useQuery({

@@ -102,6 +102,45 @@ public sealed class ApiIntegrationTests
         Assert.Equal(HttpStatusCode.Unauthorized, refreshDepoisLogout.StatusCode);
     }
 
+    [Fact]
+    public async Task Compras_e_limite_utilizado_devem_respeitar_o_fechamento_do_cartao()
+    {
+        await using var factory = new ApiFactory();
+        var client = factory.CreateClient();
+        var token = await CadastrarAsync(client, "cartoes@exemplo.com");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var cartaoResponse = await client.PostAsJsonAsync("/api/cartoes", new
+        {
+            nome = "Cartão mensal",
+            banco = "Banco Teste",
+            bandeira = "Visa",
+            limite = 1000m,
+            diaFechamento = 10,
+            diaVencimento = 17,
+            cor = "#1239c5"
+        });
+        cartaoResponse.EnsureSuccessStatusCode();
+        var cartao = await cartaoResponse.Content.ReadFromJsonAsync<ItemCriado>();
+
+        await CriarCompraAsync(client, cartao!.Id, "Compra antes do fechamento", 300m, new DateOnly(2026, 7, 9), 3);
+        await CriarCompraAsync(client, cartao.Id, "Compra após o fechamento", 80m, new DateOnly(2026, 7, 11), 1);
+
+        var comprasJulho = await client.GetFromJsonAsync<List<CompraResposta>>($"/api/cartoes/{cartao.Id}/compras?mes=7&ano=2026");
+        var comprasAgosto = await client.GetFromJsonAsync<List<CompraResposta>>($"/api/cartoes/{cartao.Id}/compras?mes=8&ano=2026");
+        var comprasSetembro = await client.GetFromJsonAsync<List<CompraResposta>>($"/api/cartoes/{cartao.Id}/compras?mes=9&ano=2026");
+        var cartoesJulho = await client.GetFromJsonAsync<List<CartaoResposta>>("/api/cartoes?mes=7&ano=2026");
+        var cartoesAgosto = await client.GetFromJsonAsync<List<CartaoResposta>>("/api/cartoes?mes=8&ano=2026");
+        var cartoesSetembro = await client.GetFromJsonAsync<List<CartaoResposta>>("/api/cartoes?mes=9&ano=2026");
+
+        Assert.Collection(comprasJulho!, compra => Assert.Equal("Compra antes do fechamento", compra.Descricao));
+        Assert.Collection(comprasAgosto!, compra => Assert.Equal("Compra após o fechamento", compra.Descricao));
+        Assert.Empty(comprasSetembro!);
+        Assert.Equal(300m, Assert.Single(cartoesJulho!).LimiteUtilizado);
+        Assert.Equal(80m, Assert.Single(cartoesAgosto!).LimiteUtilizado);
+        Assert.Equal(0m, Assert.Single(cartoesSetembro!).LimiteUtilizado);
+    }
+
     private static async Task<string> CadastrarAsync(HttpClient client, string email)
     {
         var response = await client.PostAsJsonAsync("/api/autenticacao/cadastro", new
@@ -116,6 +155,21 @@ public sealed class ApiIntegrationTests
         return auth!.AccessToken;
     }
 
+    private static async Task CriarCompraAsync(HttpClient client, Guid cartaoId, string descricao, decimal valorTotal, DateOnly dataCompra, int quantidadeParcelas)
+    {
+        var response = await client.PostAsJsonAsync($"/api/cartoes/{cartaoId}/compras", new
+        {
+            descricao,
+            valorTotal,
+            dataCompra,
+            quantidadeParcelas
+        });
+
+        response.EnsureSuccessStatusCode();
+    }
+
     private sealed record AuthResposta(string AccessToken);
     private sealed record ItemCriado(Guid Id);
+    private sealed record CompraResposta(string Descricao);
+    private sealed record CartaoResposta(decimal LimiteUtilizado);
 }

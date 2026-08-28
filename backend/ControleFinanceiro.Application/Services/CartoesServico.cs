@@ -8,9 +8,11 @@ namespace ControleFinanceiro.Application.Services;
 
 public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServico perfisServico)
 {
-    public async Task<IReadOnlyList<CartaoCreditoResponse>> ListarAsync(Guid perfilId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<CartaoCreditoResponse>> ListarAsync(Guid perfilId, int mes, int ano, CancellationToken cancellationToken)
     {
         await perfisServico.ValidarPerfilDoUsuarioAsync(perfilId, cancellationToken);
+        var competencia = ObterCompetencia(mes, ano);
+
         return await db.CartoesCredito.AsNoTracking()
             .Where(cartao => cartao.PerfilId == perfilId)
             .OrderBy(cartao => cartao.Nome)
@@ -20,7 +22,13 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
                 cartao.Banco,
                 cartao.Bandeira,
                 cartao.Limite,
-                db.ComprasCartao.Where(compra => compra.CartaoCreditoId == cartao.Id).Sum(compra => (decimal?)compra.ValorTotal) ?? 0,
+                db.ComprasCartao
+                    .Where(compra => compra.CartaoCreditoId == cartao.Id
+                        && db.ParcelasCartao.Any(parcela => parcela.CompraCartaoId == compra.Id
+                            && parcela.NumeroParcela == 1
+                            && db.FaturasCartao.Any(fatura => fatura.Id == parcela.FaturaCartaoId
+                                && fatura.MesReferencia == competencia)))
+                    .Sum(compra => (decimal?)compra.ValorTotal) ?? 0,
                 cartao.DiaFechamento,
                 cartao.DiaVencimento,
                 cartao.Cor,
@@ -86,9 +94,14 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
     public async Task<IReadOnlyList<CompraCartaoResponse>> ListarComprasAsync(Guid perfilId, Guid cartaoId, int mes, int ano, CancellationToken cancellationToken)
     {
         await ObterCartaoAsync(perfilId, cartaoId, cancellationToken);
-        var competencia = new DateOnly(ano, mes, 1);
+        var competencia = ObterCompetencia(mes, ano);
         var compras = await db.ComprasCartao.AsNoTracking()
-            .Where(compra => compra.PerfilId == perfilId && compra.CartaoCreditoId == cartaoId)
+            .Where(compra => compra.PerfilId == perfilId
+                && compra.CartaoCreditoId == cartaoId
+                && db.ParcelasCartao.Any(parcela => parcela.CompraCartaoId == compra.Id
+                    && parcela.NumeroParcela == 1
+                    && db.FaturasCartao.Any(fatura => fatura.Id == parcela.FaturaCartaoId
+                        && fatura.MesReferencia == competencia)))
             .OrderByDescending(compra => compra.DataCompra)
             .ToListAsync(cancellationToken);
 
@@ -107,9 +120,7 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
         return compras.Select(compra =>
         {
             var parcelasDaCompra = parcelasPorCompra.GetValueOrDefault(compra.Id) ?? [];
-            var parcelaAtual = parcelasDaCompra.FirstOrDefault(parcela => parcela.MesReferencia == competencia)
-                ?? parcelasDaCompra.LastOrDefault(parcela => parcela.MesReferencia < competencia)
-                ?? parcelasDaCompra.FirstOrDefault();
+            var parcelaAtual = parcelasDaCompra.FirstOrDefault(parcela => parcela.MesReferencia == competencia);
 
             return new CompraCartaoResponse(
                 compra.Id,
@@ -191,5 +202,12 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
             .SumAsync(compra => (decimal?)compra.ValorTotal, cancellationToken) ?? 0;
 
         return new CartaoCreditoResponse(cartao.Id, cartao.Nome, cartao.Banco, cartao.Bandeira, cartao.Limite, limiteUtilizado, cartao.DiaFechamento, cartao.DiaVencimento, cartao.Cor, cartao.Ativo);
+    }
+
+    private static DateOnly ObterCompetencia(int mes, int ano)
+    {
+        if (mes is < 1 or > 12) throw new ValidacaoException("Mês inválido.");
+        if (ano < 1900) throw new ValidacaoException("Ano inválido.");
+        return new DateOnly(ano, mes, 1);
     }
 }

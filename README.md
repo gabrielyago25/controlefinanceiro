@@ -18,6 +18,8 @@ Na primeira execução, o Compose baixa as imagens, compila a aplicação, cria 
 - API: http://localhost:5175
 - Saúde da API: http://localhost:5175/health
 
+Por padrão, as portas da aplicação, da API e do PostgreSQL são vinculadas a `127.0.0.1`. Os serviços ficam acessíveis somente na própria máquina e não são expostos diretamente para outros dispositivos da rede local.
+
 Para encerrar:
 
 ```powershell

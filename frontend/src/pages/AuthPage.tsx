@@ -74,9 +74,9 @@ export function AuthPage({ modo }: { modo: "login" | "cadastro" }) {
         </form>
 
         {modo === "login" && (
-          <aside className="test-credentials" aria-label="Credenciais de acesso para teste">
-            <strong>Credenciais de acesso</strong>
-            <span>E-mail: <code>gabriel@teste2.com</code></span>
+          <aside className="test-credentials" aria-label="Exemplos de credenciais para teste">
+            <strong>Exemplo de Acesso</strong>
+            <span>E-mail: <code>exemplo@exemplo.com</code></span>
             <span>Senha: <code>Teste@123</code></span>
           </aside>
         )}

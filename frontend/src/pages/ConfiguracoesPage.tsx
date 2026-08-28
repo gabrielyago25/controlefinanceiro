@@ -3,7 +3,7 @@ import { Check, CreditCard, Pencil, Plus, Tags, UserRound, X } from "lucide-reac
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api, Usuario } from "../api";
-import { useAuth } from "../App";
+import { useAuth, usePeriodo } from "../App";
 import { useToast } from "../components/Toast";
 import { EmptyState, Field, MoneyInput, PageHeader, parseMoney, StatusBadge } from "../components/ui";
 import "../styles/pages/ConfiguracoesPage.css";
@@ -13,6 +13,7 @@ type Cartao = { id: string; nome: string; banco: string; bandeira: string; limit
 
 export function ConfiguracoesPage() {
   const { usuario, setUsuario } = useAuth();
+  const { periodo } = usePeriodo();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const [editandoUsuario, setEditandoUsuario] = useState(false);
@@ -24,7 +25,10 @@ export function ConfiguracoesPage() {
   useEffect(() => usuarioForm.reset({ nome: usuario?.nome ?? "", email: usuario?.email ?? "" }), [usuario]);
 
   const categorias = useQuery({ queryKey: ["categorias"], queryFn: () => api<Categoria[]>("/api/categorias-despesa") });
-  const cartoes = useQuery({ queryKey: ["cartoes"], queryFn: () => api<Cartao[]>("/api/cartoes") });
+  const cartoes = useQuery({
+    queryKey: ["cartoes", periodo],
+    queryFn: () => api<Cartao[]>(`/api/cartoes?mes=${periodo.mes}&ano=${periodo.ano}`)
+  });
 
   const criarCategoria = useMutation({
     mutationFn: (data: { nome: string }) => api("/api/categorias-despesa", { method: "POST", body: JSON.stringify(data) }),

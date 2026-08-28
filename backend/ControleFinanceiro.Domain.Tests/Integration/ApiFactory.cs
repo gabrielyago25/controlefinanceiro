@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -51,7 +52,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
                 .UseEphemeralDataProtectionProvider();
 
             services.AddDbContext<ControleFinanceiroDbContext>(options =>
-                options.UseInMemoryDatabase(_databaseName));
+                options
+                    .UseInMemoryDatabase(_databaseName)
+                    .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning)));
 
             services.AddScoped<IControleFinanceiroDbContext>(provider =>
                 provider.GetRequiredService<ControleFinanceiroDbContext>());

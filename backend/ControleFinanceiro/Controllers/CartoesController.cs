@@ -11,10 +11,10 @@ namespace ControleFinanceiro.Controllers;
 public sealed class CartoesController(CartoesServico cartoesServico, PerfisServico perfisServico) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<CartaoCreditoResponse>>> Listar(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<CartaoCreditoResponse>>> Listar([FromQuery] int mes, [FromQuery] int ano, CancellationToken cancellationToken)
     {
         var perfilId = await perfisServico.ObterPerfilPadraoIdAsync(cancellationToken);
-        return Ok(await cartoesServico.ListarAsync(perfilId, cancellationToken));
+        return Ok(await cartoesServico.ListarAsync(perfilId, mes, ano, cancellationToken));
     }
 
     [HttpPost]

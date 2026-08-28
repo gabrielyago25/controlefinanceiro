@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-controle}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-controle_dev}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -28,7 +28,7 @@ services:
       Jwt__Chave: ${JWT_KEY:-desenvolvimento-docker-chave-controle-financeiro-2026}
       Cors__OrigensPermitidas__0: ${FRONTEND_ORIGIN:-http://localhost:5173}
     ports:
-      - "${API_PORT:-5175}:8080"
+      - "127.0.0.1:${API_PORT:-5175}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:5175}
     ports:
-      - "${FRONTEND_PORT:-5173}:80"
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
     depends_on:
       - api
 

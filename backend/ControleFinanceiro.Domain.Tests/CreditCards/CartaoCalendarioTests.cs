@@ -14,6 +14,7 @@ public sealed class CartaoCalendarioTests
 
     [Theory]
     [InlineData(2026, 7, 9, 2026, 7, 10)]
+    [InlineData(2026, 7, 10, 2026, 7, 10)]
     [InlineData(2026, 7, 11, 2026, 8, 10)]
     public void Deve_calcular_fechamento_da_compra(int anoCompra, int mesCompra, int diaCompra, int anoFechamento, int mesFechamento, int diaFechamento)
     {
