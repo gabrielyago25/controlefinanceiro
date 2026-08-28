@@ -47,7 +47,7 @@ export function DashboardPage() {
 
   return (
     <section className="page-stack dashboard-page">
-      <PageHeader title="Resumo financeiro" description="Acompanhe o resultado do mês, pendências e a distribuição das despesas." />
+      <PageHeader title="Resumo financeiro" description="Dashboard completo de indicadores financeiros." />
 
       <div className="metrics">
         <Metric icon={<TrendingUp size={22} />} label="Receitas do mês" value={data?.totalReceitas} description="Total de entradas" previous={mesAnterior?.receitas} reference={referenciaAnterior} tone="income" />
