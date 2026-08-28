@@ -171,8 +171,8 @@ export function DespesasPage() {
           <p>Cadastre contas, acompanhe vencimentos e gerencie seus cartões.</p>
         </div>
         <div className="accounts-actions">
-          <button className="primary-action action-secondary" type="button" onClick={() => setModalContaAberto(true)}><Plus size={18} /> Cadastrar conta</button>
-          <button className="primary-action" type="button" onClick={() => setModalCartaoAberto(true)}><CreditCard size={18} /> Cadastrar cartão de crédito</button>    
+          <button className="primary-action action-create" type="button" onClick={() => setModalContaAberto(true)}><Plus size={18} /> Cadastrar conta</button>
+          <button className="primary-action action-create" type="button" onClick={() => setModalCartaoAberto(true)}><CreditCard size={18} /> Cadastrar cartão de crédito</button>    
         </div>
       </header>
 
@@ -195,7 +195,7 @@ export function DespesasPage() {
                   </div>
                   <StatusBadge tone={despesa.atrasada ? "danger" : despesa.status === "Paga" ? "success" : "warning"}>{despesa.atrasada ? "Atrasada" : despesa.status}</StatusBadge>
                   <strong className="bill-value">{money(despesa.valor)}</strong>
-                  <button className="ghost-button" type="button" onClick={() => abrirEdicaoDespesa(despesa)}><Pencil size={16} /> Editar</button>
+                  <button className="ghost-button action-edit" type="button" onClick={() => abrirEdicaoDespesa(despesa)}><Pencil size={16} /> Editar</button>
                   {despesa.status === "Paga"
                     ? <button className="ghost-button" onClick={() => reabrir.mutate(despesa.id)}><RotateCcw size={16} /> Reabrir</button>
                     : <button className="ghost-button" onClick={() => pagar.mutate(despesa.id)}><CheckCircle2 size={16} /> Pagar</button>}
@@ -268,7 +268,7 @@ export function DespesasPage() {
           </Field>
           <div className="modal-actions">
             <button className="ghost-button" type="button" onClick={() => { setModalContaAberto(false); setDespesaEdicao(null); contaForm.reset(); }}>Cancelar</button>
-            <button className="primary-action" disabled={salvarConta.isPending}>{salvarConta.isPending ? "Salvando..." : despesaEdicao ? "Salvar alterações" : "Salvar conta"}</button>
+            <button className={`primary-action ${despesaEdicao ? "" : "action-create"}`} disabled={salvarConta.isPending}>{salvarConta.isPending ? "Salvando..." : despesaEdicao ? "Salvar alterações" : "Salvar conta"}</button>
           </div>
         </form>
       </Modal>
@@ -302,7 +302,7 @@ export function DespesasPage() {
           </Field>
           <div className="modal-actions">
             <button className="ghost-button" type="button" onClick={() => setModalCartaoAberto(false)}>Cancelar</button>
-            <button className="primary-action" disabled={salvarCartao.isPending}>{salvarCartao.isPending ? "Salvando..." : "Salvar cartão"}</button>
+            <button className="primary-action action-create" disabled={salvarCartao.isPending}>{salvarCartao.isPending ? "Salvando..." : "Salvar cartão"}</button>
           </div>
         </form>
       </Modal>
@@ -331,7 +331,7 @@ export function DespesasPage() {
           </Field>
           <div className="modal-actions">
             <button className="ghost-button" type="button" onClick={() => { setModalCompraAberto(false); setCartaoCompraVinculado(null); }}>Cancelar</button>
-            <button className="primary-action" disabled={salvarCompraCartao.isPending}>{salvarCompraCartao.isPending ? "Lançando..." : "Lançar compra"}</button>
+            <button className="primary-action action-create" disabled={salvarCompraCartao.isPending}>{salvarCompraCartao.isPending ? "Lançando..." : "Lançar compra"}</button>
           </div>
         </form>
       </Modal>

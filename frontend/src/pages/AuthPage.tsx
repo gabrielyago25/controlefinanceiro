@@ -68,7 +68,7 @@ export function AuthPage({ modo }: { modo: "login" | "cadastro" }) {
             <div className="input-with-icon"><LockKeyhole size={18} /><input type="password" autoComplete={modo === "login" ? "current-password" : "new-password"} {...form.register("senha")} /></div>
           </Field>
 
-          <button className="primary-action" disabled={mutation.isPending}>
+          <button className={`primary-action ${modo === "cadastro" ? "action-create" : ""}`} disabled={mutation.isPending}>
             {mutation.isPending ? "Processando..." : modo === "login" ? "Entrar" : "Cadastrar"} <ArrowRight size={18} />
           </button>
         </form>
@@ -76,7 +76,7 @@ export function AuthPage({ modo }: { modo: "login" | "cadastro" }) {
         {modo === "login" && (
           <aside className="test-credentials" aria-label="Credenciais de acesso para teste">
             <strong>Credenciais de acesso</strong>
-            <span>E-mail: <code>gabriel@teste.com</code></span>
+            <span>E-mail: <code>gabriel@teste2.com</code></span>
             <span>Senha: <code>Teste@123</code></span>
           </aside>
         )}

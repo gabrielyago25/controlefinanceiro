@@ -13,9 +13,16 @@
 .primary-action, .ghost-button, .ghost-icon { border: 0; border-radius: var(--radius-md); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .primary-action { min-height: 44px; padding: 0 18px; background: var(--color-primary-600); color: #fff; font-weight: 700; box-shadow: 0 5px 14px rgba(18, 57, 197, .18); }
 .primary-action:hover:not(:disabled) { transform: translateY(-1px); background: var(--color-primary-700); box-shadow: 0 8px 18px rgba(18, 57, 197, .23); }
-.danger-action { background: #a7353f; }
+.danger-action, .action-danger, .ghost-button.action-danger { background: #df3152; border-color: #df3152; color: #fff; box-shadow: 0 5px 14px rgba(223, 49, 82, .16); }
 .ghost-button { min-height: 38px; padding: 0 13px; color: var(--color-primary-700); background: var(--color-primary-100); font-weight: 700; }
 .ghost-button:hover:not(:disabled) { background: #dfe6ff; }
+.action-create { background: #00a878; border-color: #00a878; color: #fff; box-shadow: 0 5px 14px rgba(0, 168, 120, .17); }
+.action-edit { background: #fff; border: 1px solid var(--color-border-strong); color: var(--color-primary-800); box-shadow: var(--shadow-xs); }
+.action-save { background: var(--color-primary-600); border-color: var(--color-primary-600); color: #fff; box-shadow: 0 5px 14px rgba(18, 57, 197, .16); }
+.action-create:hover:not(:disabled) { background: #008f68; border-color: #008f68; box-shadow: 0 7px 17px rgba(0, 168, 120, .22); }
+.action-edit:hover:not(:disabled) { background: #f7f9fc; border-color: #aeb9cf; }
+.action-save:hover:not(:disabled) { background: var(--color-primary-700); border-color: var(--color-primary-700); }
+.action-danger:hover:not(:disabled), .danger-action:hover:not(:disabled) { background: #c92747; border-color: #c92747; box-shadow: 0 7px 17px rgba(223, 49, 82, .22); }
 .ghost-icon { width: 40px; height: 40px; padding: 0; color: var(--color-text-soft); background: var(--color-bg-soft); }
 .ghost-icon:hover { color: var(--color-primary-600); background: #e6ebfb; }
 .money-input { position: relative; }

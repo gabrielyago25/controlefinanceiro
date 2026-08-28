@@ -55,7 +55,7 @@ export function ReceitasPage() {
         <Field label="Observações" description="Campo opcional para detalhes internos.">
           <input {...register("observacoes")} />
         </Field>
-        <button className="primary-action form-submit" disabled={salvar.isPending}><Plus size={18} /> {salvar.isPending ? "Salvando..." : receitaEdicao ? "Salvar alterações" : "Adicionar receita"}</button>
+        <button className={`primary-action form-submit ${receitaEdicao ? "" : "action-create"}`} disabled={salvar.isPending}><Plus size={18} /> {salvar.isPending ? "Salvando..." : receitaEdicao ? "Salvar alterações" : "Adicionar receita"}</button>
         {receitaEdicao && <button className="ghost-button" type="button" onClick={() => { setReceitaEdicao(null); reset(); }}>Cancelar edição</button>}
       </form>
 
@@ -63,7 +63,7 @@ export function ReceitasPage() {
         {receitas.data?.length ? (
           <table>
             <thead><tr><th>Receita</th><th>Recebimento</th><th>Valor</th><th>Ações</th></tr></thead>
-            <tbody>{receitas.data.map(r => <tr key={r.id}><td><strong>{r.descricao}</strong><span>{r.observacoes}</span></td><td>{formatDate(r.dataRecebimento)}</td><td>{money(r.valor)}</td><td className="row-actions"><button className="ghost-button" onClick={() => editar(r)}><Pencil size={15} /> Editar</button> <button className="ghost-button" onClick={() => setReceitaParaExcluir(r)}><Trash2 size={15} /> Excluir</button></td></tr>)}</tbody>
+            <tbody>{receitas.data.map(r => <tr key={r.id}><td><strong>{r.descricao}</strong><span>{r.observacoes}</span></td><td>{formatDate(r.dataRecebimento)}</td><td>{money(r.valor)}</td><td className="row-actions"><button className="ghost-button action-edit" onClick={() => editar(r)}><Pencil size={15} /> Editar</button> <button className="ghost-button action-danger" onClick={() => setReceitaParaExcluir(r)}><Trash2 size={15} /> Excluir</button></td></tr>)}</tbody>
           </table>
         ) : (
           <EmptyState title="Nenhuma receita lançada" description="Adicione entradas para compor o saldo mensal do dashboard." />
