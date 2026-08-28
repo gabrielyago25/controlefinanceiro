@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, CreditCard, Pencil, Plus, Receipt, RotateCcw, ShoppingBag } from "lucide-react";
+import { CheckCircle2, CreditCard, Eye, Pencil, Plus, Receipt, RotateCcw, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "../api";
@@ -10,11 +10,11 @@ import "../styles/pages/DespesasPage.css";
 
 type Categoria = { id: string; nome: string; ativo: boolean };
 type Despesa = { id: string; descricao: string; valor: number; dataVencimento: string; status: string; atrasada: boolean; categoriaDespesaId: string; observacoes?: string };
-type Cartao = { id: string; nome: string; banco: string; bandeira: string; limite: number; diaFechamento: number; diaVencimento: number; ativo: boolean; cor?: string };
+type Cartao = { id: string; nome: string; banco: string; bandeira: string; limite: number; limiteUtilizado: number; diaFechamento: number; diaVencimento: number; ativo: boolean; cor?: string };
 type DespesaForm = { descricao: string; valor: number | ""; dataVencimento: string; categoriaDespesaId: string; observacoes: string };
 type CartaoForm = { nome: string; banco: string; bandeira: string; limite: number | ""; diaFechamento: number; diaVencimento: number; cor: string };
 type CompraCartaoForm = { cartaoId: string; descricao: string; valorTotal: number | ""; dataCompra: string; quantidadeParcelas: number };
-type CompraCartao = { id: string; descricao: string; valorTotal: number; dataCompra: string; quantidadeParcelas: number };
+type CompraCartao = { id: string; descricao: string; valorTotal: number; valorParcela: number; dataCompra: string; numeroParcelaAtual: number; quantidadeParcelas: number };
 type FaturaCartao = { id: string; mesReferencia: string; dataFechamento: string; dataVencimento: string; status: string; valor: number };
 
 const hojeIso = () => new Date().toISOString().slice(0, 10);
@@ -57,8 +57,8 @@ export function DespesasPage() {
   });
 
   const comprasCartao = useQuery({
-    queryKey: ["compras-cartao", cartaoDetalhe?.id],
-    queryFn: () => api<CompraCartao[]>(`/api/cartoes/${cartaoDetalhe!.id}/compras`),
+    queryKey: ["compras-cartao", cartaoDetalhe?.id, periodo],
+    queryFn: () => api<CompraCartao[]>(`/api/cartoes/${cartaoDetalhe!.id}/compras?mes=${periodo.mes}&ano=${periodo.ano}`),
     enabled: !!cartaoDetalhe
   });
   const faturasCartao = useQuery({
@@ -224,7 +224,11 @@ export function DespesasPage() {
                     <button className="card-name-button" type="button" onClick={() => { setCartaoDetalhe(cartao); setAbaCartao("compras"); }}>{cartao.nome}</button>
                     <span>{cartao.bandeira}</span>
                   </div>
-                  <strong>{money(cartao.limite)}</strong>
+                  <div className="card-limit-summary">
+                    <span><small>Limite</small><strong>{money(cartao.limite)}</strong></span>
+                    <span><small>Utilizado</small><strong>{money(cartao.limiteUtilizado)}</strong></span>
+                  </div>
+                  <button className="ghost-button action-edit" type="button" onClick={() => { setCartaoDetalhe(cartao); setAbaCartao("compras"); }}><Eye size={16} /> Detalhes</button>
                   <button className="ghost-button" type="button" onClick={() => abrirModalCompra(cartao)} disabled={!cartao.ativo}><ShoppingBag size={16} /> Compra</button>
                 </article>
               ))}
@@ -241,7 +245,7 @@ export function DespesasPage() {
           <button className={abaCartao === "faturas" ? "active" : ""} type="button" onClick={() => setAbaCartao("faturas")}>Faturas mês a mês</button>
         </div>
         <div className="table-wrap card-detail-content">
-          {abaCartao === "compras" ? (comprasCartao.data?.length ? <table><thead><tr><th>Compra</th><th>Data</th><th>Parcelas</th><th>Valor total</th></tr></thead><tbody>{comprasCartao.data.map(compra => <tr key={compra.id}><td><strong>{compra.descricao}</strong></td><td>{formatDate(compra.dataCompra)}</td><td>{compra.quantidadeParcelas}x</td><td>{money(compra.valorTotal)}</td></tr>)}</tbody></table> : <EmptyState title="Nenhuma compra" description="Ainda não existem compras lançadas neste cartão." />)
+          {abaCartao === "compras" ? (comprasCartao.data?.length ? <table><thead><tr><th>Compra</th><th>Data</th><th>Parcelas</th><th>Valor compra</th></tr></thead><tbody>{comprasCartao.data.map(compra => <tr key={compra.id}><td><strong>{compra.descricao}</strong><span>Total: {money(compra.valorTotal)}</span></td><td>{formatDate(compra.dataCompra)}</td><td>{compra.numeroParcelaAtual}/{compra.quantidadeParcelas}</td><td>{money(compra.valorParcela)}</td></tr>)}</tbody></table> : <EmptyState title="Nenhuma compra" description="Ainda não existem compras lançadas neste cartão." />)
             : (faturasCartao.data?.length ? <table><thead><tr><th>Mês</th><th>Vencimento</th><th>Status</th><th>Valor</th><th>Ações</th></tr></thead><tbody>{faturasCartao.data.map(fatura => <tr key={fatura.id}><td>{formatDate(fatura.mesReferencia)}</td><td>{formatDate(fatura.dataVencimento)}</td><td><StatusBadge tone={fatura.status === "Paga" ? "success" : "warning"}>{fatura.status}</StatusBadge></td><td>{money(fatura.valor)}</td><td>{fatura.status !== "Paga" && <button className="ghost-button" onClick={() => pagarFatura.mutate(fatura.id)}><CheckCircle2 size={15} /> Pagar</button>}</td></tr>)}</tbody></table> : <EmptyState title="Nenhuma fatura" description="As faturas aparecerão após o lançamento de uma compra." />)}
         </div>
       </Modal>

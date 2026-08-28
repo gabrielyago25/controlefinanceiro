@@ -14,7 +14,17 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
         return await db.CartoesCredito.AsNoTracking()
             .Where(cartao => cartao.PerfilId == perfilId)
             .OrderBy(cartao => cartao.Nome)
-            .Select(cartao => new CartaoCreditoResponse(cartao.Id, cartao.Nome, cartao.Banco, cartao.Bandeira, cartao.Limite, cartao.DiaFechamento, cartao.DiaVencimento, cartao.Cor, cartao.Ativo))
+            .Select(cartao => new CartaoCreditoResponse(
+                cartao.Id,
+                cartao.Nome,
+                cartao.Banco,
+                cartao.Bandeira,
+                cartao.Limite,
+                db.ComprasCartao.Where(compra => compra.CartaoCreditoId == cartao.Id).Sum(compra => (decimal?)compra.ValorTotal) ?? 0,
+                cartao.DiaFechamento,
+                cartao.DiaVencimento,
+                cartao.Cor,
+                cartao.Ativo))
             .ToListAsync(cancellationToken);
     }
 
@@ -24,7 +34,7 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
         var cartao = new CartaoCredito(request.Nome, request.Banco, request.Bandeira, request.Limite, request.DiaFechamento, request.DiaVencimento, perfilId, request.Cor);
         db.CartoesCredito.Add(cartao);
         await db.SaveChangesAsync(cancellationToken);
-        return MapearCartao(cartao);
+        return await MapearCartaoAsync(cartao, cancellationToken);
     }
 
     public async Task<CartaoCreditoResponse> AlterarAsync(Guid perfilId, Guid id, SalvarCartaoCreditoRequest request, CancellationToken cancellationToken)
@@ -32,7 +42,7 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
         var cartao = await ObterCartaoAsync(perfilId, id, cancellationToken);
         cartao.Alterar(request.Nome, request.Banco, request.Bandeira, request.Limite, request.DiaFechamento, request.DiaVencimento, request.Cor);
         await db.SaveChangesAsync(cancellationToken);
-        return MapearCartao(cartao);
+        return await MapearCartaoAsync(cartao, cancellationToken);
     }
 
     public async Task DefinirAtivoAsync(Guid perfilId, Guid id, bool ativo, CancellationToken cancellationToken)
@@ -70,17 +80,47 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        return new CompraCartaoResponse(compra.Id, compra.Descricao, compra.ValorTotal, compra.DataCompra, compra.QuantidadeParcelas, compra.CartaoCreditoId);
+        return new CompraCartaoResponse(compra.Id, compra.Descricao, compra.ValorTotal, valores[0], compra.DataCompra, 1, compra.QuantidadeParcelas, compra.CartaoCreditoId);
     }
 
-    public async Task<IReadOnlyList<CompraCartaoResponse>> ListarComprasAsync(Guid perfilId, Guid cartaoId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<CompraCartaoResponse>> ListarComprasAsync(Guid perfilId, Guid cartaoId, int mes, int ano, CancellationToken cancellationToken)
     {
         await ObterCartaoAsync(perfilId, cartaoId, cancellationToken);
-        return await db.ComprasCartao.AsNoTracking()
+        var competencia = new DateOnly(ano, mes, 1);
+        var compras = await db.ComprasCartao.AsNoTracking()
             .Where(compra => compra.PerfilId == perfilId && compra.CartaoCreditoId == cartaoId)
             .OrderByDescending(compra => compra.DataCompra)
-            .Select(compra => new CompraCartaoResponse(compra.Id, compra.Descricao, compra.ValorTotal, compra.DataCompra, compra.QuantidadeParcelas, compra.CartaoCreditoId))
             .ToListAsync(cancellationToken);
+
+        var compraIds = compras.Select(compra => compra.Id).ToArray();
+        var parcelas = await (
+            from parcela in db.ParcelasCartao.AsNoTracking()
+            join fatura in db.FaturasCartao.AsNoTracking() on parcela.FaturaCartaoId equals fatura.Id
+            where compraIds.Contains(parcela.CompraCartaoId)
+            select new { parcela.CompraCartaoId, parcela.NumeroParcela, parcela.Valor, fatura.MesReferencia })
+            .ToListAsync(cancellationToken);
+
+        var parcelasPorCompra = parcelas
+            .GroupBy(parcela => parcela.CompraCartaoId)
+            .ToDictionary(grupo => grupo.Key, grupo => grupo.OrderBy(parcela => parcela.NumeroParcela).ToList());
+
+        return compras.Select(compra =>
+        {
+            var parcelasDaCompra = parcelasPorCompra.GetValueOrDefault(compra.Id) ?? [];
+            var parcelaAtual = parcelasDaCompra.FirstOrDefault(parcela => parcela.MesReferencia == competencia)
+                ?? parcelasDaCompra.LastOrDefault(parcela => parcela.MesReferencia < competencia)
+                ?? parcelasDaCompra.FirstOrDefault();
+
+            return new CompraCartaoResponse(
+                compra.Id,
+                compra.Descricao,
+                compra.ValorTotal,
+                parcelaAtual?.Valor ?? ParcelamentoServico.Dividir(compra.ValorTotal, compra.QuantidadeParcelas)[0],
+                compra.DataCompra,
+                parcelaAtual?.NumeroParcela ?? 1,
+                compra.QuantidadeParcelas,
+                compra.CartaoCreditoId);
+        }).ToList();
     }
 
     public async Task<IReadOnlyList<FaturaCartaoResponse>> ListarFaturasAsync(Guid perfilId, Guid cartaoId, CancellationToken cancellationToken)
@@ -144,6 +184,12 @@ public sealed class CartoesServico(IControleFinanceiroDbContext db, PerfisServic
         return fatura;
     }
 
-    private static CartaoCreditoResponse MapearCartao(CartaoCredito cartao)
-        => new(cartao.Id, cartao.Nome, cartao.Banco, cartao.Bandeira, cartao.Limite, cartao.DiaFechamento, cartao.DiaVencimento, cartao.Cor, cartao.Ativo);
+    private async Task<CartaoCreditoResponse> MapearCartaoAsync(CartaoCredito cartao, CancellationToken cancellationToken)
+    {
+        var limiteUtilizado = await db.ComprasCartao.AsNoTracking()
+            .Where(compra => compra.CartaoCreditoId == cartao.Id)
+            .SumAsync(compra => (decimal?)compra.ValorTotal, cancellationToken) ?? 0;
+
+        return new CartaoCreditoResponse(cartao.Id, cartao.Nome, cartao.Banco, cartao.Bandeira, cartao.Limite, limiteUtilizado, cartao.DiaFechamento, cartao.DiaVencimento, cartao.Cor, cartao.Ativo);
+    }
 }

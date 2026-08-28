@@ -48,10 +48,10 @@ public sealed class CartoesController(CartoesServico cartoesServico, PerfisServi
     }
 
     [HttpGet("{cartaoId:guid}/compras")]
-    public async Task<ActionResult<IReadOnlyList<CompraCartaoResponse>>> ListarCompras(Guid cartaoId, CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<CompraCartaoResponse>>> ListarCompras(Guid cartaoId, [FromQuery] int mes, [FromQuery] int ano, CancellationToken cancellationToken)
     {
         var perfilId = await perfisServico.ObterPerfilPadraoIdAsync(cancellationToken);
-        return Ok(await cartoesServico.ListarComprasAsync(perfilId, cartaoId, cancellationToken));
+        return Ok(await cartoesServico.ListarComprasAsync(perfilId, cartaoId, mes, ano, cancellationToken));
     }
 
     [HttpPost("{cartaoId:guid}/compras")]

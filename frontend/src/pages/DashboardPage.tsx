@@ -52,8 +52,8 @@ export function DashboardPage() {
       <div className="metrics">
         <Metric icon={<TrendingUp size={22} />} label="Receitas do mês" value={data?.totalReceitas} description="Total de entradas" previous={mesAnterior?.receitas} reference={referenciaAnterior} tone="income" />
         <Metric icon={<TrendingDown size={22} />} label="Despesas do mês" value={data?.totalDespesas} description="Total de saídas" previous={mesAnterior?.despesas} reference={referenciaAnterior} tone="expense" />
-        <Metric icon={<Wallet size={22} />} label="Saldo mensal" value={data?.saldoMensal} description="Receitas - Despesas" reference={referenciaAnterior} tone="balance" />
         <Metric icon={<CreditCard size={22} />} label="Faturas de cartões" value={data?.valorFaturasCartoes} description="Total de faturas" reference={referenciaAnterior} tone="card" />
+        <Metric icon={<Wallet size={22} />} label="Saldo mensal" value={data?.saldoMensal} description="Receitas - Despesas" reference={referenciaAnterior} tone="balance" />
       </div>
 
       <div className="dashboard-layout">

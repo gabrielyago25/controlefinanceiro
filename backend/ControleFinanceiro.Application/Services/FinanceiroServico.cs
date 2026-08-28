@@ -157,19 +157,32 @@ public sealed class FinanceiroServico(IControleFinanceiroDbContext db, PerfisSer
         var inicioEvolucao = competencia.AddMonths(-5);
         var receitasEvolucao = await db.Receitas.AsNoTracking().Where(r => r.PerfilId == perfilId && r.Competencia >= inicioEvolucao && r.Competencia <= competencia).ToListAsync(cancellationToken);
         var despesasEvolucao = await db.Despesas.AsNoTracking().Where(d => d.PerfilId == perfilId && d.Competencia >= inicioEvolucao && d.Competencia <= competencia).ToListAsync(cancellationToken);
+        var faturasEvolucao = await db.FaturasCartao.AsNoTracking()
+            .Where(f => f.PerfilId == perfilId && f.MesReferencia >= inicioEvolucao && f.MesReferencia <= competencia)
+            .ToListAsync(cancellationToken);
+        var faturasEvolucaoIds = faturasEvolucao.Select(f => f.Id).ToArray();
+        var parcelasEvolucao = await db.ParcelasCartao.AsNoTracking()
+            .Where(p => faturasEvolucaoIds.Contains(p.FaturaCartaoId))
+            .ToListAsync(cancellationToken);
         var evolucao = Enumerable.Range(0, 6)
             .Select(i => inicioEvolucao.AddMonths(i))
-            .Select(c => new EvolucaoMensalResponse(c, receitasEvolucao.Where(r => r.Competencia == c).Sum(r => r.Valor), despesasEvolucao.Where(d => d.Competencia == c).Sum(d => d.Valor)))
+            .Select(c =>
+            {
+                var idsFaturasDoMes = faturasEvolucao.Where(f => f.MesReferencia == c).Select(f => f.Id).ToHashSet();
+                var despesasDoMes = despesasEvolucao.Where(d => d.Competencia == c).Sum(d => d.Valor)
+                    + parcelasEvolucao.Where(p => idsFaturasDoMes.Contains(p.FaturaCartaoId)).Sum(p => p.Valor);
+                return new EvolucaoMensalResponse(c, receitasEvolucao.Where(r => r.Competencia == c).Sum(r => r.Valor), despesasDoMes);
+            })
             .ToList();
 
         var totalReceitas = receitas.Sum(r => r.Valor);
-        var totalDespesas = despesas.Sum(d => d.Valor);
         var valorFaturas = parcelas.Sum(p => p.Valor);
+        var totalDespesas = despesas.Sum(d => d.Valor) + valorFaturas;
 
         return new DashboardResponse(
             totalReceitas,
             totalDespesas,
-            totalReceitas - totalDespesas - valorFaturas,
+            totalReceitas - totalDespesas,
             despesas.Where(d => d.Status == StatusDespesa.Paga).Sum(d => d.Valor),
             despesas.Where(d => d.Status == StatusDespesa.Pendente && d.DataVencimento >= hoje).Sum(d => d.Valor),
             despesas.Where(d => d.Status == StatusDespesa.Pendente && d.DataVencimento < hoje).Sum(d => d.Valor),

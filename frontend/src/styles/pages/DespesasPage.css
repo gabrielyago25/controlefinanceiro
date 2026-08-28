@@ -16,12 +16,17 @@
 .bill-row:hover { transform: translateY(-1px); border-color: var(--color-border-strong); box-shadow: var(--shadow-xs); }
 .bill-main { min-width: 0; } .bill-main strong, .bill-main span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bill-main span { color: #6d7a75; font-size: .86rem; margin-top: 4px; } .bill-value { white-space: nowrap; }
-.card-line { position: relative; overflow: hidden; display: grid; grid-template-columns: 8px minmax(0,1fr) auto auto; align-items: center; gap: 14px; min-height: 76px; padding: 14px; border: 1px solid #e4ebe8; border-radius: var(--radius-md); background: linear-gradient(135deg, #fff, #f5f8f7); transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
+.card-line { position: relative; overflow: hidden; display: grid; grid-template-columns: 8px minmax(0,1fr) auto auto auto; align-items: center; gap: 14px; min-height: 76px; padding: 14px; border: 1px solid #e4ebe8; border-radius: var(--radius-md); background: linear-gradient(135deg, #fff, #f5f8f7); transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
 .card-line:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--color-border-strong); }
 .card-color { width: 8px; height: 46px; border-radius: 999px; box-shadow: 0 0 0 4px rgba(0,0,0,.025); }
 .card-line div { min-width: 0; } .card-line strong, .card-line span { display: block; }
 .card-line div strong, .card-line div span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-line span { color: #6d7a75; font-size: .86rem; margin-top: 4px; }
+.card-limit-summary { min-width: 132px; display: grid; gap: 6px; padding: 0 12px; border-left: 1px solid var(--color-border); }
+.card-limit-summary > span { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0; }
+.card-limit-summary small { color: var(--color-text-muted); font-size: .65rem; }
+.card-limit-summary strong { color: var(--color-text); font-size: .73rem; white-space: nowrap; }
+.card-limit-summary > span:last-child strong { color: #df3152; }
 .card-name-button { border: 0; padding: 0; background: transparent; color: var(--color-primary-700); font-weight: 800; text-align: left; font-size: .95rem; } .card-name-button:hover { color: var(--color-primary-600); }
 .card-detail-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
 .card-detail-tabs button { min-height: 42px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 17px; background: var(--color-surface); color: var(--color-primary-800); font-weight: 750; }

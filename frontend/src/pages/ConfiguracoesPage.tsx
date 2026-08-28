@@ -9,7 +9,7 @@ import { EmptyState, Field, MoneyInput, PageHeader, parseMoney, StatusBadge } fr
 import "../styles/pages/ConfiguracoesPage.css";
 
 type Categoria = { id: string; nome: string; ativo: boolean };
-type Cartao = { id: string; nome: string; banco: string; bandeira: string; limite: number; diaFechamento: number; diaVencimento: number; ativo: boolean; cor?: string };
+type Cartao = { id: string; nome: string; banco: string; bandeira: string; limite: number; limiteUtilizado: number; diaFechamento: number; diaVencimento: number; ativo: boolean; cor?: string };
 
 export function ConfiguracoesPage() {
   const { usuario, setUsuario } = useAuth();
