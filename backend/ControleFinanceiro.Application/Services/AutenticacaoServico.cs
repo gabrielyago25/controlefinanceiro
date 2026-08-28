@@ -3,6 +3,7 @@ using ControleFinanceiro.Application.Abstractions;
 using ControleFinanceiro.Application.DTOs;
 using ControleFinanceiro.Application.Exceptions;
 using ControleFinanceiro.Domain.Authentication;
+using ControleFinanceiro.Domain.Profiles;
 using ControleFinanceiro.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,7 @@ public sealed class AutenticacaoServico(IControleFinanceiroDbContext db, ISenhaS
 
         var tokens = tokenServico.EmitirTokens(usuario);
         db.Usuarios.Add(usuario);
+        db.Perfis.Add(new Perfil("Principal", usuario.Id));
         db.UsuarioRefreshTokens.Add(new UsuarioRefreshToken(usuario.Id, tokenServico.GerarHashRefreshToken(tokens.RefreshToken), tokens.RefreshTokenExpiraEm));
         await db.SaveChangesAsync(cancellationToken);
 

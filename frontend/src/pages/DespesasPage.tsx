@@ -3,11 +3,9 @@ import { CheckCircle2, CreditCard, Pencil, Plus, Receipt, RotateCcw, ShoppingBag
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "../api";
-import { useAuth } from "../App";
+import { usePeriodo } from "../App";
 import { useToast } from "../components/Toast";
 import { EmptyState, Field, formatDate, Modal, money, MoneyInput, parseMoney, StatusBadge } from "../components/ui";
-import { Periodo } from "./DashboardPage";
-import { competenciaAtual } from "./periodo";
 import "../styles/pages/DespesasPage.css";
 
 type Categoria = { id: string; nome: string; ativo: boolean };
@@ -22,9 +20,8 @@ type FaturaCartao = { id: string; mesReferencia: string; dataFechamento: string;
 const hojeIso = () => new Date().toISOString().slice(0, 10);
 
 export function DespesasPage() {
-  const { perfil } = useAuth();
+  const { periodo } = usePeriodo();
   const { showToast } = useToast();
-  const [periodo, setPeriodo] = useState(competenciaAtual());
   const [modalContaAberto, setModalContaAberto] = useState(false);
   const [despesaEdicao, setDespesaEdicao] = useState<Despesa | null>(null);
   const [modalCartaoAberto, setModalCartaoAberto] = useState(false);
@@ -38,43 +35,40 @@ export function DespesasPage() {
     defaultValues: { descricao: "", valor: "", dataVencimento: "", categoriaDespesaId: "", observacoes: "" }
   });
   const cartaoForm = useForm<CartaoForm>({
-    defaultValues: { nome: "", banco: "", bandeira: "", limite: "", diaFechamento: 10, diaVencimento: 17, cor: "#26766b" }
+    defaultValues: { nome: "", banco: "", bandeira: "", limite: "", diaFechamento: 10, diaVencimento: 17, cor: "#1239c5" }
   });
   const compraCartaoForm = useForm<CompraCartaoForm>({
     defaultValues: { cartaoId: "", descricao: "", valorTotal: "", dataCompra: hojeIso(), quantidadeParcelas: 1 }
   });
 
   const categorias = useQuery({
-    queryKey: ["categorias", perfil?.id],
-    queryFn: () => api<Categoria[]>(`/api/perfis/${perfil!.id}/categorias-despesa`),
-    enabled: !!perfil
+    queryKey: ["categorias"],
+    queryFn: () => api<Categoria[]>("/api/categorias-despesa")
   });
 
   const despesas = useQuery({
-    queryKey: ["despesas", perfil?.id, periodo],
-    queryFn: () => api<Despesa[]>(`/api/perfis/${perfil!.id}/despesas?mes=${periodo.mes}&ano=${periodo.ano}`),
-    enabled: !!perfil
+    queryKey: ["despesas", periodo],
+    queryFn: () => api<Despesa[]>(`/api/despesas?mes=${periodo.mes}&ano=${periodo.ano}`)
   });
 
   const cartoes = useQuery({
-    queryKey: ["cartoes", perfil?.id],
-    queryFn: () => api<Cartao[]>(`/api/perfis/${perfil!.id}/cartoes`),
-    enabled: !!perfil
+    queryKey: ["cartoes"],
+    queryFn: () => api<Cartao[]>("/api/cartoes")
   });
 
   const comprasCartao = useQuery({
-    queryKey: ["compras-cartao", perfil?.id, cartaoDetalhe?.id],
-    queryFn: () => api<CompraCartao[]>(`/api/perfis/${perfil!.id}/cartoes/${cartaoDetalhe!.id}/compras`),
-    enabled: !!perfil && !!cartaoDetalhe
+    queryKey: ["compras-cartao", cartaoDetalhe?.id],
+    queryFn: () => api<CompraCartao[]>(`/api/cartoes/${cartaoDetalhe!.id}/compras`),
+    enabled: !!cartaoDetalhe
   });
   const faturasCartao = useQuery({
-    queryKey: ["faturas-cartao", perfil?.id, cartaoDetalhe?.id],
-    queryFn: () => api<FaturaCartao[]>(`/api/perfis/${perfil!.id}/cartoes/${cartaoDetalhe!.id}/faturas`),
-    enabled: !!perfil && !!cartaoDetalhe
+    queryKey: ["faturas-cartao", cartaoDetalhe?.id],
+    queryFn: () => api<FaturaCartao[]>(`/api/cartoes/${cartaoDetalhe!.id}/faturas`),
+    enabled: !!cartaoDetalhe
   });
 
   const salvarConta = useMutation({
-    mutationFn: (data: DespesaForm) => api(`/api/perfis/${perfil!.id}/despesas${despesaEdicao ? `/${despesaEdicao.id}` : ""}`, {
+    mutationFn: (data: DespesaForm) => api(`/api/despesas${despesaEdicao ? `/${despesaEdicao.id}` : ""}`, {
       method: despesaEdicao ? "PUT" : "POST",
       body: JSON.stringify({ ...data, valor: Number(data.valor), mes: periodo.mes, ano: periodo.ano })
     }),
@@ -90,7 +84,7 @@ export function DespesasPage() {
   });
 
   const salvarCartao = useMutation({
-    mutationFn: (data: CartaoForm) => api(`/api/perfis/${perfil!.id}/cartoes`, {
+    mutationFn: (data: CartaoForm) => api("/api/cartoes", {
       method: "POST",
       body: JSON.stringify({ ...data, limite: Number(data.limite), diaFechamento: Number(data.diaFechamento), diaVencimento: Number(data.diaVencimento) })
     }),
@@ -98,13 +92,13 @@ export function DespesasPage() {
       cartaoForm.reset();
       setModalCartaoAberto(false);
       queryClient.invalidateQueries({ queryKey: ["cartoes"] });
-      showToast({ kind: "success", title: "Cartão cadastrado", message: "Ele já aparece na lista de cartões do perfil." });
+      showToast({ kind: "success", title: "Cartão cadastrado", message: "Ele já aparece na lista de cartões." });
     },
     onError: (error) => showToast({ kind: "error", title: "Erro ao cadastrar cartão", message: error.message })
   });
 
   const salvarCompraCartao = useMutation({
-    mutationFn: (data: CompraCartaoForm) => api(`/api/perfis/${perfil!.id}/cartoes/${data.cartaoId}/compras`, {
+    mutationFn: (data: CompraCartaoForm) => api(`/api/cartoes/${data.cartaoId}/compras`, {
       method: "POST",
       body: JSON.stringify({
         descricao: data.descricao,
@@ -125,7 +119,7 @@ export function DespesasPage() {
   });
 
   const pagar = useMutation({
-    mutationFn: (id: string) => api(`/api/perfis/${perfil!.id}/despesas/${id}/pagar`, { method: "PATCH", body: JSON.stringify({}) }),
+    mutationFn: (id: string) => api(`/api/despesas/${id}/pagar`, { method: "PATCH", body: JSON.stringify({}) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["despesas"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -135,7 +129,7 @@ export function DespesasPage() {
   });
 
   const reabrir = useMutation({
-    mutationFn: (id: string) => api(`/api/perfis/${perfil!.id}/despesas/${id}/reabrir`, { method: "PATCH" }),
+    mutationFn: (id: string) => api(`/api/despesas/${id}/reabrir`, { method: "PATCH" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["despesas"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -144,7 +138,7 @@ export function DespesasPage() {
     onError: (error) => showToast({ kind: "error", title: "Não foi possível reabrir", message: error.message })
   });
   const pagarFatura = useMutation({
-    mutationFn: (faturaId: string) => api(`/api/perfis/${perfil!.id}/cartoes/${cartaoDetalhe!.id}/faturas/${faturaId}/pagar`, { method: "PATCH" }),
+    mutationFn: (faturaId: string) => api(`/api/cartoes/${cartaoDetalhe!.id}/faturas/${faturaId}/pagar`, { method: "PATCH" }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["faturas-cartao"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); showToast({ kind: "success", title: "Fatura marcada como paga" }); },
     onError: (error) => showToast({ kind: "error", title: "Erro ao pagar fatura", message: error.message })
   });
@@ -172,8 +166,9 @@ export function DespesasPage() {
     <section className="accounts-page">
       <header className="accounts-toolbar">
         <div className="accounts-period">
-          <span>Mês em exibição</span>
-          <Periodo periodo={periodo} setPeriodo={setPeriodo} />
+          <span>Organização financeira</span>
+          <h1>Controle de contas</h1>
+          <p>Cadastre contas, acompanhe vencimentos e gerencie seus cartões.</p>
         </div>
         <div className="accounts-actions">
           <button className="primary-action action-secondary" type="button" onClick={() => setModalContaAberto(true)}><Plus size={18} /> Cadastrar conta</button>
@@ -224,7 +219,7 @@ export function DespesasPage() {
             <div className="card-line-list">
               {cartoes.data.map((cartao) => (
                 <article className="card-line" key={cartao.id}>
-                  <span className="card-color" style={{ backgroundColor: cartao.cor ?? "#26766b" }} />
+                  <span className="card-color" style={{ backgroundColor: cartao.cor ?? "#1239c5" }} />
                   <div>
                     <button className="card-name-button" type="button" onClick={() => { setCartaoDetalhe(cartao); setAbaCartao("compras"); }}>{cartao.nome}</button>
                     <span>{cartao.bandeira}</span>
@@ -235,7 +230,7 @@ export function DespesasPage() {
               ))}
             </div>
           ) : (
-            <EmptyState title="Nenhum cartão cadastrado" description="Clique em Cadastrar cartão de crédito para organizar seus cartões por perfil." />
+            <EmptyState title="Nenhum cartão cadastrado" description="Clique em Cadastrar cartão de crédito para organizar seus cartões." />
           )}
         </section>
       </div>

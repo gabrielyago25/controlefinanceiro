@@ -1,9 +1,10 @@
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Home, LogOut, Receipt, Settings, UserRound, WalletCards } from "lucide-react";
-import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { BarChart3, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Home, LogOut, Receipt, Settings, WalletCards } from "lucide-react";
+import { createContext, lazy, Suspense, useContext, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, AuthResponse, Perfil, setAccessToken, Usuario } from "./api";
+import { api, AuthResponse, setAccessToken, Usuario } from "./api";
 import { ToastProvider, useToast } from "./components/Toast";
+import { competenciaAtual, mesNome } from "./pages/periodo";
 import "./styles/common/layout.css";
 
 const AuthPage = lazy(() => import("./pages/AuthPage").then(module => ({ default: module.AuthPage })));
@@ -11,12 +12,8 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage").then(module => 
 const DespesasPage = lazy(() => import("./pages/DespesasPage").then(module => ({ default: module.DespesasPage })));
 const ReceitasPage = lazy(() => import("./pages/ReceitasPage").then(module => ({ default: module.ReceitasPage })));
 const ConfiguracoesPage = lazy(() => import("./pages/ConfiguracoesPage").then(module => ({ default: module.ConfiguracoesPage })));
-const PerfilPage = lazy(() => import("./pages/PerfilPage").then(module => ({ default: module.PerfilPage })));
-
 type AuthContextValue = {
   usuario: Usuario | null;
-  perfil: Perfil | null;
-  setPerfil: (perfil: Perfil | null) => void;
   setUsuario: (usuario: Usuario) => void;
   onAuth: (response: AuthResponse) => void;
 };
@@ -24,81 +21,44 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 export const useAuth = () => useContext(AuthContext)!;
 
+type Periodo = { mes: number; ano: number };
+const PeriodContext = createContext<{ periodo: Periodo; setPeriodo: (periodo: Periodo) => void } | null>(null);
+export const usePeriodo = () => useContext(PeriodContext)!;
+
 export function App() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [perfil, setPerfilState] = useState<Perfil | null>(null);
-
-  const setPerfil = useCallback((novoPerfil: Perfil | null) => {
-    setPerfilState(novoPerfil);
-    if (novoPerfil && usuario) localStorage.setItem("controleFinanceiro.perfil", JSON.stringify({ usuarioId: usuario.id, perfilId: novoPerfil.id }));
-    else localStorage.removeItem("controleFinanceiro.perfil");
-  }, [usuario]);
+  const [periodo, setPeriodo] = useState(competenciaAtual());
 
   const value = useMemo(() => ({
     usuario,
-    perfil,
-    setPerfil,
     setUsuario,
     onAuth: (response: AuthResponse) => {
       setAccessToken(response.accessToken);
-      if (usuario?.id && usuario.id !== response.usuario.id) setPerfil(null);
       setUsuario(response.usuario);
     }
-  }), [usuario, perfil]);
+  }), [usuario]);
 
   return (
     <ToastProvider>
       <AuthContext.Provider value={value}>
-        <Suspense fallback={<div className="center">Carregando página...</div>}>
-          <Routes>
-            <Route path="/login" element={<AuthPage modo="login" />} />
-            <Route path="/cadastro" element={<AuthPage modo="cadastro" />} />
-            <Route path="/perfis" element={<RequireAuth><PerfilPage /></RequireAuth>} />
-            <Route path="/" element={<RequireAuth><Shell /></RequireAuth>}>
-              <Route index element={<RequirePerfil><DashboardPage /></RequirePerfil>} />
-              <Route path="despesas" element={<RequirePerfil><DespesasPage /></RequirePerfil>} />
-              <Route path="receitas" element={<RequirePerfil><ReceitasPage /></RequirePerfil>} />
-              <Route path="configuracoes" element={<RequirePerfil><ConfiguracoesPage /></RequirePerfil>} />
-            </Route>
-          </Routes>
-        </Suspense>
+        <PeriodContext.Provider value={{ periodo, setPeriodo }}>
+          <Suspense fallback={<div className="center">Carregando página...</div>}>
+            <Routes>
+              <Route path="/login" element={<AuthPage modo="login" />} />
+              <Route path="/cadastro" element={<AuthPage modo="cadastro" />} />
+              <Route path="/" element={<RequireAuth><Shell /></RequireAuth>}>
+                <Route index element={<DashboardPage />} />
+                <Route path="despesas" element={<DespesasPage />} />
+                <Route path="receitas" element={<ReceitasPage />} />
+                <Route path="configuracoes" element={<ConfiguracoesPage />} />
+                <Route path="perfis" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </Suspense>
+        </PeriodContext.Provider>
       </AuthContext.Provider>
     </ToastProvider>
   );
-}
-
-function RequirePerfil({ children }: { children: React.ReactNode }) {
-  const { usuario, perfil, setPerfil } = useAuth();
-  const [perfilValidado, setPerfilValidado] = useState(false);
-  const perfis = useQuery({
-    queryKey: ["perfis"],
-    queryFn: () => api<Perfil[]>("/api/perfis"),
-    enabled: !!usuario,
-    retry: false
-  });
-
-  useEffect(() => {
-    if (!usuario || !perfis.data) return;
-    if (perfil?.ativo && perfis.data.some(p => p.id === perfil.id && p.ativo)) { setPerfilValidado(true); return; }
-    try {
-      const raw = localStorage.getItem("controleFinanceiro.perfil");
-      const salvo = raw ? JSON.parse(raw) as { usuarioId?: string; perfilId?: string } : null;
-      const restaurado = salvo?.usuarioId === usuario.id ? perfis.data.find(p => p.id === salvo.perfilId && p.ativo) : undefined;
-      setPerfil(restaurado ?? null);
-    } catch {
-      setPerfil(null);
-    }
-    setPerfilValidado(true);
-  }, [usuario, perfil, perfis.data, setPerfil]);
-
-  if (perfis.isLoading) return <div className="center">Validando perfil...</div>;
-  if (perfis.isError) return <Navigate to="/perfis" replace />;
-
-  const perfilValido = perfil && perfil.ativo ? perfis.data?.find(p => p.id === perfil.id && p.ativo) : undefined;
-  if (perfilValido) return children;
-
-  if (!perfilValidado) return <div className="center">Restaurando perfil...</div>;
-  return <Navigate to="/perfis" replace />;
 }
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -124,14 +84,13 @@ function Shell() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { perfil, setPerfil, usuario } = useAuth();
+  const { usuario } = useAuth();
   const { showToast } = useToast();
 
   const logout = useMutation({
     mutationFn: () => api<void>("/api/autenticacao/logout", { method: "POST" }),
     onSettled: () => {
       setAccessToken(null);
-      setPerfil(null);
       queryClient.clear();
       showToast({ kind: "info", title: "Sessão encerrada" });
       navigate("/login");
@@ -145,15 +104,21 @@ function Shell() {
       : location.pathname.includes("receitas")
         ? "Receitas"
         : "Configurações";
+  const iniciais = usuario?.nome
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(parte => parte[0]?.toUpperCase())
+    .join("") || "U";
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <WalletCards size={25} />
+          <span className="brand-mark"><WalletCards size={22} /></span>
           <div>
             <strong>ControleFinanceiro</strong>
-            <span>Gestão por perfil</span>
+            <span>Gestão inteligente</span>
           </div>
         </div>
         <nav aria-label="Navegação principal">
@@ -163,11 +128,12 @@ function Shell() {
           <NavLink to="/configuracoes"><Settings size={18} /> Configurações</NavLink>
         </nav>
         <div className="sidebar-user">
-          <UserRound size={18} />
+          <span className="user-avatar">{iniciais}</span>
           <div>
             <strong>{usuario?.nome ?? "Usuário"}</strong>
             <span>{usuario?.email ?? "Sessão ativa"}</span>
           </div>
+          <ChevronDown size={15} />
         </div>
         <button className="icon-text" onClick={() => logout.mutate()} disabled={logout.isPending}>
           <LogOut size={18} /> Sair
@@ -179,13 +145,33 @@ function Shell() {
             <span>Área atual</span>
             <strong>{pageTitle}</strong>
           </div>
-          <button className="profile-pill" onClick={() => navigate("/perfis")}>
-            <span>Perfil</span>
-            <strong>{perfil?.nome ?? "Selecionar perfil"}</strong>
-          </button>
+          <div className="topbar-actions">
+            <PeriodControl />
+            <span className="topbar-divider" />
+            <div className="topbar-account" aria-label={`Usuário: ${usuario?.nome ?? "Usuário"}`}>
+              <span className="user-avatar user-avatar-light">{iniciais}</span>
+              <ChevronDown size={15} />
+            </div>
+          </div>
         </header>
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+function PeriodControl() {
+  const { periodo, setPeriodo } = usePeriodo();
+  const mover = (delta: number) => {
+    const data = new Date(periodo.ano, periodo.mes - 1 + delta, 1);
+    setPeriodo({ mes: data.getMonth() + 1, ano: data.getFullYear() });
+  };
+
+  return (
+    <div className="period period-topbar" aria-label="Selecionar mês">
+      <div className="period-label"><CalendarDays size={17} /><strong>{mesNome(periodo.mes, periodo.ano)}</strong><ChevronDown size={14} /></div>
+      <button className="period-arrow" type="button" onClick={() => mover(-1)} aria-label="Mês anterior"><ChevronLeft size={17} /></button>
+      <button className="period-arrow" type="button" onClick={() => mover(1)} aria-label="Próximo mês"><ChevronRight size={17} /></button>
     </div>
   );
 }

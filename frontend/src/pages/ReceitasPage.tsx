@@ -3,30 +3,26 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "../api";
-import { useAuth } from "../App";
+import { usePeriodo } from "../App";
 import { useToast } from "../components/Toast";
 import { EmptyState, Field, formatDate, Modal, money, MoneyInput, PageHeader, parseMoney } from "../components/ui";
-import { Periodo } from "./DashboardPage";
-import { competenciaAtual } from "./periodo";
 
 type Receita = { id: string; descricao: string; valor: number; dataRecebimento: string; observacoes?: string };
 type ReceitaForm = { descricao: string; valor: number | ""; dataRecebimento: string; observacoes: string };
 
 export function ReceitasPage() {
-  const { perfil } = useAuth();
+  const { periodo } = usePeriodo();
   const { showToast } = useToast();
-  const [periodo, setPeriodo] = useState(competenciaAtual());
   const [receitaEdicao, setReceitaEdicao] = useState<Receita | null>(null);
   const [receitaParaExcluir, setReceitaParaExcluir] = useState<Receita | null>(null);
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, formState } = useForm<ReceitaForm>({ defaultValues: { descricao: "", valor: "", dataRecebimento: "", observacoes: "" } });
   const receitas = useQuery({
-    queryKey: ["receitas", perfil?.id, periodo],
-    queryFn: () => api<Receita[]>(`/api/perfis/${perfil!.id}/receitas?mes=${periodo.mes}&ano=${periodo.ano}`),
-    enabled: !!perfil
+    queryKey: ["receitas", periodo],
+    queryFn: () => api<Receita[]>(`/api/receitas?mes=${periodo.mes}&ano=${periodo.ano}`)
   });
   const salvar = useMutation({
-    mutationFn: (data: ReceitaForm) => api(`/api/perfis/${perfil!.id}/receitas${receitaEdicao ? `/${receitaEdicao.id}` : ""}`, { method: receitaEdicao ? "PUT" : "POST", body: JSON.stringify({ ...data, valor: Number(data.valor), mes: periodo.mes, ano: periodo.ano }) }),
+    mutationFn: (data: ReceitaForm) => api(`/api/receitas${receitaEdicao ? `/${receitaEdicao.id}` : ""}`, { method: receitaEdicao ? "PUT" : "POST", body: JSON.stringify({ ...data, valor: Number(data.valor), mes: periodo.mes, ano: periodo.ano }) }),
     onSuccess: () => {
       reset();
       setReceitaEdicao(null);
@@ -37,7 +33,7 @@ export function ReceitasPage() {
     onError: (error) => showToast({ kind: "error", title: "Erro ao criar receita", message: error.message })
   });
   const excluir = useMutation({
-    mutationFn: (id: string) => api(`/api/perfis/${perfil!.id}/receitas/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/receitas/${id}`, { method: "DELETE" }),
     onSuccess: () => { setReceitaParaExcluir(null); queryClient.invalidateQueries({ queryKey: ["receitas"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); showToast({ kind: "success", title: "Receita excluída" }); },
     onError: (error) => showToast({ kind: "error", title: "Erro ao excluir receita", message: error.message })
   });
@@ -45,7 +41,7 @@ export function ReceitasPage() {
 
   return (
     <section className="page-stack">
-      <PageHeader title="Receitas" description="Registre salários, vendas, aluguéis recebidos e outras entradas." actions={<Periodo periodo={periodo} setPeriodo={setPeriodo} />} />
+      <PageHeader title="Receitas" description="Registre salários, vendas, aluguéis recebidos e outras entradas." />
       <form className="surface panel-form" onSubmit={handleSubmit((data) => salvar.mutate(data))}>
         <Field label="Descrição da receita" description="Exemplo: salário, venda, serviço prestado." error={formState.errors.descricao?.message}>
           <input {...register("descricao", { required: "Informe a descrição da receita." })} />

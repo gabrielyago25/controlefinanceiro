@@ -1,5 +1,4 @@
 export type Usuario = { id: string; nome: string; email: string };
-export type Perfil = { id: string; nome: string; codigoMoeda: string; ativo: boolean };
 export type AuthResponse = { accessToken: string; expiraEm: string; usuario: Usuario };
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5175";

@@ -7,10 +7,13 @@ namespace ControleFinanceiro.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/perfis/{perfilId:guid}/dashboard")]
-public sealed class DashboardController(FinanceiroServico financeiroServico) : ControllerBase
+[Route("api/dashboard")]
+public sealed class DashboardController(FinanceiroServico financeiroServico, PerfisServico perfisServico) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<DashboardResponse>> Obter(Guid perfilId, [FromQuery] int mes, [FromQuery] int ano, CancellationToken cancellationToken)
-        => Ok(await financeiroServico.ObterDashboardAsync(perfilId, mes, ano, cancellationToken));
+    public async Task<ActionResult<DashboardResponse>> Obter([FromQuery] int mes, [FromQuery] int ano, CancellationToken cancellationToken)
+    {
+        var perfilId = await perfisServico.ObterPerfilPadraoIdAsync(cancellationToken);
+        return Ok(await financeiroServico.ObterDashboardAsync(perfilId, mes, ano, cancellationToken));
+    }
 }

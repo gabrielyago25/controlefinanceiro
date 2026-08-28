@@ -12,7 +12,7 @@ public sealed class ApiIntegrationTests
         await using var factory = new ApiFactory();
         var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/api/perfis");
+        var response = await client.GetAsync("/api/dashboard?mes=7&ano=2026");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -39,7 +39,7 @@ public sealed class ApiIntegrationTests
     }
 
     [Fact]
-    public async Task Usuario_nao_deve_editar_perfil_de_outro_usuario()
+    public async Task Usuario_nao_deve_editar_categoria_de_outro_usuario()
     {
         await using var factory = new ApiFactory();
         var usuario1 = factory.CreateClient();
@@ -47,19 +47,19 @@ public sealed class ApiIntegrationTests
 
         var token1 = await CadastrarAsync(usuario1, "ana@exemplo.com");
         usuario1.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token1);
-        var perfilResponse = await usuario1.PostAsJsonAsync("/api/perfis", new { nome = "Casa", codigoMoeda = "BRL" });
-        var perfil = await perfilResponse.Content.ReadFromJsonAsync<PerfilCriado>();
+        var categoriaResponse = await usuario1.PostAsJsonAsync("/api/categorias-despesa", new { nome = "Moradia" });
+        var categoria = await categoriaResponse.Content.ReadFromJsonAsync<ItemCriado>();
 
         var token2 = await CadastrarAsync(usuario2, "bruno@exemplo.com");
         usuario2.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token2);
-        var tentativa = await usuario2.PutAsJsonAsync($"/api/perfis/{perfil!.Id}", new { nome = "Perfil invadido" });
+        var tentativa = await usuario2.PutAsJsonAsync($"/api/categorias-despesa/{categoria!.Id}", new { nome = "Categoria invadida" });
 
-        Assert.Equal(HttpStatusCode.Created, perfilResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, categoriaResponse.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, tentativa.StatusCode);
     }
 
     [Fact]
-    public async Task Usuario_nao_deve_acessar_modulos_de_perfil_de_outro_usuario()
+    public async Task Usuario_nao_deve_acessar_dados_de_outro_usuario()
     {
         await using var factory = new ApiFactory();
         var proprietario = factory.CreateClient();
@@ -67,26 +67,23 @@ public sealed class ApiIntegrationTests
 
         var tokenProprietario = await CadastrarAsync(proprietario, "proprietario@exemplo.com");
         proprietario.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenProprietario);
-        var perfilResponse = await proprietario.PostAsJsonAsync("/api/perfis", new { nome = "Privado", codigoMoeda = "BRL" });
-        var perfil = await perfilResponse.Content.ReadFromJsonAsync<PerfilCriado>();
+        var receitaResponse = await proprietario.PostAsJsonAsync("/api/receitas", new
+        {
+            descricao = "Receita privada",
+            valor = 100m,
+            dataRecebimento = new DateOnly(2026, 7, 10),
+            mes = 7,
+            ano = 2026,
+            observacoes = "Somente do proprietário"
+        });
 
         var tokenOutroUsuario = await CadastrarAsync(outroUsuario, "visitante@exemplo.com");
         outroUsuario.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenOutroUsuario);
 
-        var caminhos = new[]
-        {
-            $"/api/perfis/{perfil!.Id}/categorias-despesa",
-            $"/api/perfis/{perfil.Id}/despesas?mes=7&ano=2026",
-            $"/api/perfis/{perfil.Id}/receitas?mes=7&ano=2026",
-            $"/api/perfis/{perfil.Id}/cartoes",
-            $"/api/perfis/{perfil.Id}/dashboard?mes=7&ano=2026"
-        };
+        var receitasOutroUsuario = await outroUsuario.GetFromJsonAsync<List<ItemCriado>>("/api/receitas?mes=7&ano=2026");
 
-        foreach (var caminho in caminhos)
-        {
-            var resposta = await outroUsuario.GetAsync(caminho);
-            Assert.Equal(HttpStatusCode.NotFound, resposta.StatusCode);
-        }
+        Assert.Equal(HttpStatusCode.Created, receitaResponse.StatusCode);
+        Assert.Empty(receitasOutroUsuario!);
     }
 
     [Fact]
@@ -120,5 +117,5 @@ public sealed class ApiIntegrationTests
     }
 
     private sealed record AuthResposta(string AccessToken);
-    private sealed record PerfilCriado(Guid Id);
+    private sealed record ItemCriado(Guid Id);
 }

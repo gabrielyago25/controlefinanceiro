@@ -31,8 +31,8 @@ export function AuthPage({ modo }: { modo: "login" | "cadastro" }) {
     mutationFn: (data: FormData) => api<AuthResponse>(`/api/autenticacao/${modo}`, { method: "POST", body: JSON.stringify(data) }),
     onSuccess: (response) => {
       onAuth(response);
-      showToast({ kind: "success", title: modo === "login" ? "Login realizado" : "Conta criada", message: "Escolha o perfil financeiro para continuar." });
-      navigate("/perfis");
+      showToast({ kind: "success", title: modo === "login" ? "Login realizado" : "Conta criada", message: "Você já pode organizar suas finanças." });
+      navigate("/");
     },
     onError: (error) => {
       showToast({ kind: "error", title: "Não foi possível continuar", message: error.message });
@@ -44,7 +44,7 @@ export function AuthPage({ modo }: { modo: "login" | "cadastro" }) {
       <section className="auth-hero">
         <div className="auth-mark"><LockKeyhole size={26} /></div>
         <h1>{modo === "login" ? "Bem-vindo de volta" : "Comece seu controle financeiro"}</h1>
-        <p>Organize contas, receitas e cartões por perfil, mantendo cada área financeira separada e segura.</p>
+        <p>Organize contas, receitas e cartões em um só lugar, com acesso simples e seguro.</p>
       </section>
 
       <section className="auth-panel">

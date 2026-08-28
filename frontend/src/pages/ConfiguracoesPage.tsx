@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreditCard, FolderCog, Plus, Tags, UserRound } from "lucide-react";
+import { CreditCard, Plus, Tags, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { api, Perfil, Usuario } from "../api";
+import { api, Usuario } from "../api";
 import { useAuth } from "../App";
 import { useToast } from "../components/Toast";
 import { EmptyState, Field, MoneyInput, PageHeader, parseMoney, StatusBadge } from "../components/ui";
@@ -12,7 +12,7 @@ type Categoria = { id: string; nome: string; ativo: boolean };
 type Cartao = { id: string; nome: string; banco: string; bandeira: string; limite: number; diaFechamento: number; diaVencimento: number; ativo: boolean; cor?: string };
 
 export function ConfiguracoesPage() {
-  const { perfil, usuario, setPerfil, setUsuario } = useAuth();
+  const { usuario, setUsuario } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const categoriaForm = useForm<{ nome: string }>({ defaultValues: { nome: "" } });
@@ -22,37 +22,28 @@ export function ConfiguracoesPage() {
 
   useEffect(() => usuarioForm.reset({ nome: usuario?.nome ?? "", email: usuario?.email ?? "" }), [usuario]);
 
-  const categorias = useQuery({ queryKey: ["categorias", perfil!.id], queryFn: () => api<Categoria[]>(`/api/perfis/${perfil!.id}/categorias-despesa`) });
-  const perfis = useQuery({ queryKey: ["perfis"], queryFn: () => api<Perfil[]>("/api/perfis") });
-  const cartoes = useQuery({ queryKey: ["cartoes", perfil!.id], queryFn: () => api<Cartao[]>(`/api/perfis/${perfil!.id}/cartoes`) });
+  const categorias = useQuery({ queryKey: ["categorias"], queryFn: () => api<Categoria[]>("/api/categorias-despesa") });
+  const cartoes = useQuery({ queryKey: ["cartoes"], queryFn: () => api<Cartao[]>("/api/cartoes") });
 
   const criarCategoria = useMutation({
-    mutationFn: (data: { nome: string }) => api(`/api/perfis/${perfil!.id}/categorias-despesa`, { method: "POST", body: JSON.stringify(data) }),
+    mutationFn: (data: { nome: string }) => api("/api/categorias-despesa", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => { categoriaForm.reset(); queryClient.invalidateQueries({ queryKey: ["categorias"] }); showToast({ kind: "success", title: "Categoria criada" }); },
     onError: (error) => showToast({ kind: "error", title: "Erro ao criar categoria", message: error.message })
   });
   const alterarCategoria = useMutation({
-    mutationFn: ({ categoria, nome }: { categoria: Categoria; nome: string }) => api<Categoria>(`/api/perfis/${perfil!.id}/categorias-despesa/${categoria.id}`, { method: "PUT", body: JSON.stringify({ nome }) }),
+    mutationFn: ({ categoria, nome }: { categoria: Categoria; nome: string }) => api<Categoria>(`/api/categorias-despesa/${categoria.id}`, { method: "PUT", body: JSON.stringify({ nome }) }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["categorias"] }); showToast({ kind: "success", title: "Categoria atualizada" }); }, onError: mostrarErro
   });
   const statusCategoria = useMutation({
-    mutationFn: (categoria: Categoria) => api(`/api/perfis/${perfil!.id}/categorias-despesa/${categoria.id}/${categoria.ativo ? "desativar" : "ativar"}`, { method: "PATCH" }),
+    mutationFn: (categoria: Categoria) => api(`/api/categorias-despesa/${categoria.id}/${categoria.ativo ? "desativar" : "ativar"}`, { method: "PATCH" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categorias"] }), onError: mostrarErro
   });
-  const alterarPerfil = useMutation({
-    mutationFn: ({ item, nome }: { item: Perfil; nome: string }) => api<Perfil>(`/api/perfis/${item.id}`, { method: "PUT", body: JSON.stringify({ nome }) }),
-    onSuccess: (atualizado) => { if (perfil!.id === atualizado.id) setPerfil(atualizado); queryClient.invalidateQueries({ queryKey: ["perfis"] }); showToast({ kind: "success", title: "Perfil atualizado" }); }, onError: mostrarErro
-  });
-  const statusPerfil = useMutation({
-    mutationFn: (item: Perfil) => api(`/api/perfis/${item.id}/${item.ativo ? "desativar" : "ativar"}`, { method: "PATCH" }),
-    onSuccess: (_, item) => { queryClient.invalidateQueries({ queryKey: ["perfis"] }); if (item.id === perfil!.id && item.ativo) setPerfil(null); }, onError: mostrarErro
-  });
   const alterarCartao = useMutation({
-    mutationFn: (item: Cartao) => api<Cartao>(`/api/perfis/${perfil!.id}/cartoes/${item.id}`, { method: "PUT", body: JSON.stringify(item) }),
+    mutationFn: (item: Cartao) => api<Cartao>(`/api/cartoes/${item.id}`, { method: "PUT", body: JSON.stringify(item) }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["cartoes"] }); showToast({ kind: "success", title: "Cartão atualizado" }); }, onError: mostrarErro
   });
   const statusCartao = useMutation({
-    mutationFn: (item: Cartao) => api(`/api/perfis/${perfil!.id}/cartoes/${item.id}/${item.ativo ? "desativar" : "ativar"}`, { method: "PATCH" }),
+    mutationFn: (item: Cartao) => api(`/api/cartoes/${item.id}/${item.ativo ? "desativar" : "ativar"}`, { method: "PATCH" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cartoes"] }), onError: mostrarErro
   });
   const alterarUsuario = useMutation({
@@ -67,7 +58,7 @@ export function ConfiguracoesPage() {
   });
 
   return <section className="page-stack settings-stack">
-    <PageHeader title="Configurações" description="Edite categorias, perfis, cartões e os dados da sua conta." />
+    <PageHeader title="Configurações" description="Edite categorias, cartões e os dados da sua conta." />
 
     <SettingsSection icon={<Tags size={20} />} title="Categorias de despesa">
       <form className="panel-form compact-form" onSubmit={categoriaForm.handleSubmit(data => criarCategoria.mutate(data))}>
@@ -77,11 +68,7 @@ export function ConfiguracoesPage() {
       {categorias.data?.length ? categorias.data.map(item => <EditableNameRow key={item.id} name={item.nome} active={item.ativo} label="categoria" onSave={nome => alterarCategoria.mutate({ categoria: item, nome })} onToggle={() => statusCategoria.mutate(item)} />) : <EmptyState title="Nenhuma categoria" description="Crie a primeira categoria acima." />}
     </SettingsSection>
 
-    <SettingsSection icon={<FolderCog size={20} />} title="Perfis financeiros">
-      {perfis.data?.map(item => <EditableNameRow key={item.id} name={item.nome} active={item.ativo} label="perfil" onSave={nome => alterarPerfil.mutate({ item, nome })} onToggle={() => statusPerfil.mutate(item)} />)}
-    </SettingsSection>
-
-    <SettingsSection icon={<CreditCard size={20} />} title="Cartões do perfil atual">
+    <SettingsSection icon={<CreditCard size={20} />} title="Cartões">
       {cartoes.data?.length ? cartoes.data.map(item => <EditableCardRow key={item.id} item={item} onSave={alterarCartao.mutate} onToggle={() => statusCartao.mutate(item)} />) : <EmptyState title="Nenhum cartão" description="Cadastre cartões na página de despesas." />}
     </SettingsSection>
 
