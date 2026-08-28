@@ -118,7 +118,6 @@ function Shell() {
           <span className="brand-mark"><WalletCards size={22} /></span>
           <div>
             <strong>ControleFinanceiro</strong>
-            <span>Gestão inteligente</span>
           </div>
         </div>
         <nav aria-label="Navegação principal">
@@ -133,7 +132,6 @@ function Shell() {
             <strong>{usuario?.nome ?? "Usuário"}</strong>
             <span>{usuario?.email ?? "Sessão ativa"}</span>
           </div>
-          <ChevronDown size={15} />
         </div>
         <button className="icon-text" onClick={() => logout.mutate()} disabled={logout.isPending}>
           <LogOut size={18} /> Sair
@@ -150,7 +148,6 @@ function Shell() {
             <span className="topbar-divider" />
             <div className="topbar-account" aria-label={`Usuário: ${usuario?.nome ?? "Usuário"}`}>
               <span className="user-avatar user-avatar-light">{iniciais}</span>
-              <ChevronDown size={15} />
             </div>
           </div>
         </header>
