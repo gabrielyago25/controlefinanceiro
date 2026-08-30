@@ -44,7 +44,7 @@ export function AuthPage({ modo }: { modo: "login" | "cadastro" }) {
       <section className="auth-hero">
         <div className="auth-mark"><LockKeyhole size={26} /></div>
         <h1>{modo === "login" ? "Bem-vindo de volta" : "Comece seu controle financeiro"}</h1>
-        <p>Organize contas, receitas e cartões em um só lugar, com acesso simples e seguro.</p>
+        <p>Organização fincnanceira em um só lugar, com acesso simples e seguro.</p>
       </section>
 
       <section className="auth-panel">
