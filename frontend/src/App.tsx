@@ -145,10 +145,6 @@ function Shell() {
           </div>
           <div className="topbar-actions">
             <PeriodControl />
-            <span className="topbar-divider" />
-            <div className="topbar-account" aria-label={`Usuário: ${usuario?.nome ?? "Usuário"}`}>
-              <span className="user-avatar user-avatar-light">{iniciais}</span>
-            </div>
           </div>
         </header>
         <Outlet />
